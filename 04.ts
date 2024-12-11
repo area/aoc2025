@@ -1,9 +1,7 @@
 import { lineByLineGenerator } from './common/lineByLineGenerator';
+import { Vector, Position } from './common/positions';
 
 const filePath = './inputs/04.txt';
-
-interface Position { x: number, y: number }
-type Vector = Position;
 
 class WordsearchGrid {
   private readonly grid: Record<number, Record<number, string>> = {};
@@ -49,7 +47,7 @@ async function setupWordsearchGrid (filePath: string): Promise<WordsearchGrid> {
   for await (const line of lineByLine) {
     let charNumber = 0;
     for (const char of line) {
-      g.setLetter({ x: charNumber, y: lineNumber }, char);
+      g.setLetter(new Position(charNumber, lineNumber), char);
       charNumber++;
     }
     lineNumber++;
@@ -58,18 +56,18 @@ async function setupWordsearchGrid (filePath: string): Promise<WordsearchGrid> {
 }
 
 const diagonals = [
-  { x: 1, y: 1 },
-  { x: 1, y: -1 },
-  { x: -1, y: 1 },
-  { x: -1, y: -1 },
+  new Vector(1, 1),
+  new Vector(1, -1),
+  new Vector(-1, 1),
+  new Vector(-1, -1),
 ];
 
 const directions = [
   ...diagonals,
-  { x: 1, y: 0 },
-  { x: 0, y: 1 },
-  { x: -1, y: 0 },
-  { x: 0, y: -1 },
+  new Vector(1, 0),
+  new Vector(0, 1),
+  new Vector(-1, 0),
+  new Vector(0, -1),
 ];
 
 async function part1 (): Promise<void> {
@@ -79,7 +77,7 @@ async function part1 (): Promise<void> {
   for (let y = 0; y < g.height; y++) {
     for (let x = 0; x < g.width; x++) {
       for (const direction of directions) {
-        if (g.matchWord('XMAS', { x, y }, direction)) {
+        if (g.matchWord('XMAS', new Position(x, y), direction)) {
           count++;
         }
       }
@@ -97,19 +95,18 @@ async function part2 (): Promise<void> {
   for (let y = 0; y < g.height; y++) {
     for (let x = 0; x < g.width; x++) {
       for (const diagonal of diagonals) {
-        if (g.matchWord('MAS', { x, y }, diagonal)) {
+        if (g.matchWord('MAS', new Vector(x, y), diagonal)) {
           // Check if there's a MAS going the other way, in either direction
           // Work out where the A is
-          const a = { x: x + diagonal.x, y: y + diagonal.y };
+          const a = new Position(x + diagonal.x, y + diagonal.y);
 
           // Work out the possible start locations of the other MAS
-
-          const p1 = { x: a.x - diagonal.x, y: a.y + diagonal.y };
-          const p2 = { x: a.x + diagonal.x, y: a.y - diagonal.y };
+          const p1: Vector = a.add(new Vector(-diagonal.x, diagonal.y));
+          const p2 = a.add(new Vector(diagonal.x, -diagonal.y));
           // See if it's a MAS either way
-          if (g.matchWord('MAS', p1, { x: diagonal.x, y: -diagonal.y })) {
+          if (g.matchWord('MAS', p1, new Vector(diagonal.x, -diagonal.y))) {
             count++;
-          } else if (g.matchWord('MAS', p2, { x: -diagonal.x, y: diagonal.y })) {
+          } else if (g.matchWord('MAS', p2, new Vector(-diagonal.x, diagonal.y))) {
             count++;
           }
         }

@@ -1,60 +1,18 @@
 import { lineByLineGenerator } from './common/lineByLineGenerator';
 
+import { Position, Vector } from './common/positions';
+import { Grid } from './common/grid';
+
 const filePath = './inputs/06.txt';
 
-interface Position { x: number, y: number }
-type Vector = Position;
-
-class Grid {
-  private readonly grid: Record<number, Record<number, string>> = {};
-
-  public width = 0;
-  public height = 0;
-
-  public setLetter (p: Position, letter: string): void {
-    if (this.grid[p.x] === undefined) {
-      this.grid[p.x] = {};
-    }
-    this.grid[p.x][p.y] = letter;
-    if (p.x >= this.width) {
-      this.width = p.x + 1;
-    }
-    if (p.y >= this.height) {
-      this.height = p.y + 1;
-    }
-  }
-
-  public getLetter (p: Position): string {
-    if (this.grid[p.x]?.[p.y] === undefined) {
-      return '';
-    }
-    return this.grid[p.x][p.y];
-  }
-
-  public toString (): string {
-    let s = '';
-    for (let y = 0; y < this.height; y++) {
-      for (let x = 0; x < this.width; x++) {
-        s += this.grid[x][y];
-      }
-      s += '\n';
-    }
-    return s;
-  }
-}
-
 class Guard {
-  public position: Position = { x: 0, y: 0 };
-  public direction: Vector = { x: 0, y: 0 };
+  public position: Position = new Position(0, 0);
+  public direction: Vector = new Vector(0, 0);
 }
 
 class Situation {
   public guard: Guard = new Guard();
   public grid: Grid = new Grid();
-}
-
-function add (a: Position, b: Vector): Position {
-  return { x: a.x + b.x, y: a.y + b.y };
 }
 
 async function setupSituation (filePath: string): Promise<Situation> {
@@ -67,8 +25,8 @@ async function setupSituation (filePath: string): Promise<Situation> {
     let charNumber = 0;
     for (const char of line) {
       if (char === '^') {
-        guard.position = { x: charNumber, y: lineNumber };
-        guard.direction = { x: 0, y: -1 };
+        guard.position = new Position(charNumber, lineNumber);
+        guard.direction = new Vector(0, -1);
         g.setLetter({ x: charNumber, y: lineNumber }, 'X');
       } else {
         g.setLetter({ x: charNumber, y: lineNumber }, char);
@@ -84,12 +42,12 @@ function moveGuard (s: Situation): void {
   // Mark where the guard currently is
   s.grid.setLetter(s.guard.position, 'X');
   // Move the guard
-  while (s.grid.getLetter(add(s.guard.position, s.guard.direction)) === '#') {
+  while (s.grid.getLetter(s.guard.position.add(s.guard.direction)) === '#') {
     // Turn the guard right
     if (s.guard.direction.x === 0) {
-      s.guard.direction = { x: -s.guard.direction.y, y: 0 };
+      s.guard.direction = new Vector(-s.guard.direction.y, 0);
     } else {
-      s.guard.direction = { x: 0, y: s.guard.direction.x };
+      s.guard.direction = new Vector(0, s.guard.direction.x);
     }
   }
   s.guard.position.x += s.guard.direction.x;
