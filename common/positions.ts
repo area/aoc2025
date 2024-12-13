@@ -21,3 +21,17 @@ export class Position {
 
 export class Vector extends Position {
 }
+
+export const orthoganalDirections = [
+  new Position(0, -1),
+  new Position(1, 0),
+  new Position(0, 1),
+  new Position(-1, 0),
+];
+
+export const diagonalDirections = [
+  new Position(1, -1),
+  new Position(1, 1),
+  new Position(-1, 1),
+  new Position(-1, -1),
+];
