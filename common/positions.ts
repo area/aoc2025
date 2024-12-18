@@ -1,4 +1,6 @@
-export class Position {
+import { type Comparable } from './comparable';
+
+export class Position implements Comparable {
   constructor (x: number, y: number) {
     this.x = x;
     this.y = y;
@@ -17,6 +19,17 @@ export class Position {
   public toString: () => string = () => {
     return `(${this.x}, ${this.y})`;
   };
+
+  public equals (other: Comparable): boolean {
+    if (!(other instanceof Position)) {
+      return false;
+    }
+    return this.x === other.x && this.y === other.y;
+  }
+
+  public manhattanDistance (other: Position): number {
+    return Math.abs(this.x - other.x) + Math.abs(this.y - other.y);
+  }
 }
 
 export class Vector extends Position {
