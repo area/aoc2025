@@ -1,4 +1,4 @@
-import type { Position } from './positions';
+import { orthoganalDirections, type Position } from './positions';
 
 export class Grid {
   private readonly grid: Record<number, Record<number, string>> = {};
@@ -24,6 +24,17 @@ export class Grid {
       return '';
     }
     return this.grid[p.x][p.y];
+  }
+
+  public getNeighbors (p: Position): Position[] {
+    const neighbors: Position[] = [];
+    for (const direction of orthoganalDirections) {
+      const neighbor = p.add(direction);
+      if (this.getLetter(neighbor) !== '') {
+        neighbors.push(neighbor);
+      }
+    }
+    return neighbors;
   }
 
   public toString (): string {
