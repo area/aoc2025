@@ -1,14 +1,13 @@
 import { lineByLineGenerator } from './common/lineByLineGenerator';
-import { orthoganalDirections, Position, Vector } from './common/positions';
+import { Position, Vector } from './common/positions';
 import { Grid } from './common/grid';
-import { aStar } from './common/astar';
 
 const filePath = './inputs/21.txt';
 
 const numericKeypadLookup = new Map<string, Position>();
 const directionalKeypadLookup = new Map<string, Position>();
 
-type Sequence = Map<string, number>;
+type SummarisedSequence = Map<string, number>;
 
 function init (): void {
   const keypad = new Grid();
@@ -69,26 +68,6 @@ function vectorToSequences (v: Vector): string[] {
   ];
 }
 
-function getNextSequenceForDirectionalKeypadLength (line: string): number {
-  // Do any-expansion to the next level. The lengths are always the same, even for
-  // ones that aren't valid
-  let p = new Position(2, 0);
-  let sequence = '';
-  for (const c of line.split('')) {
-    const destination = directionalKeypadLookup.get(c);
-    if (destination === undefined) {
-      throw new Error('Invalid character');
-    }
-    const vector = destination.sub(p);
-    sequence += orthogonalVectorToSequence(new Vector(vector.x, 0));
-    sequence += orthogonalVectorToSequence(new Vector(0, vector.y));
-    sequence += 'A';
-    p = destination;
-  }
-  // console.log(line, sequence, sequence.length);
-  return sequence.length;
-}
-
 function charToVector (c: string): Vector {
   switch (c) {
     case 'v':
@@ -145,18 +124,24 @@ function getBestSequenceForDirectionalKeypad (line: string): string {
         sequence += s2;
       } else if (passOverEmptySquare(p, s2, new Position(0, 0))) {
         sequence += s1;
-      } else if (s1.length === 3) {
-        sequence += s1;
+      } else if (s1.length <= 3) {
+        if (s1[0] === '<') {
+          sequence += s1;
+        } else if (s2[0] === '<') {
+          sequence += s2;
+        } else if (s1[0] === '^' || s1[0] === 'v') {
+          sequence += s1;
+        } else {
+          sequence += s2;
+        }
       } else {
       // Here, they're both valid, and we need to choose the one that is best when expanded some
       // more
         const s1Next = getBestSequenceForDirectionalKeypad(s1);
         const s2Next = getBestSequenceForDirectionalKeypad(s2);
-        const s1NextNextLength = getNextSequenceForDirectionalKeypadLength(s1Next);
-        const s2NextNextLength = getNextSequenceForDirectionalKeypadLength(s2Next);
-        if (s1NextNextLength === s2NextNextLength) {
+        if (s1Next.length === s2Next.length) {
           throw new Error('AAAAAAH');
-        } else if (s1NextNextLength < s2NextNextLength) {
+        } else if (s1Next.length < s2Next.length) {
           sequence += s1;
         } else {
           sequence += s2;
@@ -201,6 +186,9 @@ function getSequenceForNumericKeypad (line: string): string {
           s1Next = getBestSequenceForDirectionalKeypad(s1Next);
           s2Next = getBestSequenceForDirectionalKeypad(s2Next);
         }
+        if (s1Next.length === s2Next.length) {
+          throw new Error('AAAAAAH');
+        }
         if (s1Next.length < s2Next.length) {
           sequence += s1;
         } else {
@@ -214,55 +202,57 @@ function getSequenceForNumericKeypad (line: string): string {
   return sequence;
 }
 
-function getSequenceLengthPart1 (line: string): number {
-  // console.log(line);
-  let sequence = getSequenceForNumericKeypad(line);
-  // console.log(sequence);
-  sequence = getBestSequenceForDirectionalKeypad(sequence);
-  // console.log(sequence);
-  sequence = getBestSequenceForDirectionalKeypad(sequence);
-  // console.log(sequence);
-  // console.log(sequence.length);
-  return sequence.length;
-}
-
-function getComplexityPart1 (line: string): number {
-  const sequenceLength = getSequenceLengthPart1(line);
-  return parseInt(line.replaceAll('A', ''), 10) * sequenceLength;
-}
-
 async function part1 (): Promise<void> {
   init();
-  // console.log(getBestSequenceForDirectionalKeypad('^>A'));
   let totalComplexity = 0;
   for await (const line of lineByLineGenerator(filePath)) {
-    totalComplexity += getComplexityPart1(line);
+    totalComplexity += getComplexityPart2(line, 2);
   }
 
   console.log(totalComplexity);
 }
 
-function getSequenceLengthPart2 (line: string): number {
-  let sequence = getSequenceForNumericKeypad(line);
-  for (let i = 0; i < 25; i++) {
-    sequence = getBestSequenceForDirectionalKeypad(sequence);
+function getBestSummarisedSequenceForDirectionalKeypad (summarisedSequence: SummarisedSequence): SummarisedSequence {
+  const newSummarisedSequence = new Map<string, number>();
+  for (const [k, v] of summarisedSequence) {
+    const sequence = getBestSequenceForDirectionalKeypad(k);
+    for (const c of sequence.split('A').map(s => s + 'A').slice(0, -1)) {
+      newSummarisedSequence.set(c, (newSummarisedSequence.get(c) ?? 0) + v);
+    }
   }
-  return sequence.length;
+  return newSummarisedSequence;
 }
 
-function getComplexityPart2 (line: string): number {
-  const sequenceLength = getSequenceLengthPart2(line);
-  return parseInt(line.replaceAll('A', ''), 10) * sequenceLength;
+function getSequenceLengthPart2 (line: string, loops: number): number {
+  const sequence = getSequenceForNumericKeypad(line);
+  let summarisedSequence = new Map<string, number>();
+  for (const c of sequence.split('A').map(s => s + 'A').slice(0, -1)) {
+    summarisedSequence.set(c, (summarisedSequence.get(c) ?? 0) + 1);
+  }
+  for (let i = 0; i < loops; i++) {
+    summarisedSequence = getBestSummarisedSequenceForDirectionalKeypad(summarisedSequence);
+  }
+  let totalLength = 0;
+  for (const [k, v] of summarisedSequence) {
+    totalLength += k.length * v;
+  }
+
+  return totalLength;
+}
+
+function getComplexityPart2 (line: string, n: number): number {
+  const sequenceLength = getSequenceLengthPart2(line, n);
+  const complexity = parseInt(line.replaceAll('A', ''), 10) * sequenceLength;
+  return complexity;
 }
 
 async function part2 (): Promise<void> {
   let totalComplexity = 0;
   for await (const line of lineByLineGenerator(filePath)) {
-    totalComplexity += getComplexityPart2(line);
+    totalComplexity += getComplexityPart2(line, 25);
   }
-
+  // 348675369134078 too high
   console.log(totalComplexity);
-
 }
 
 async function main (): Promise<void> {
