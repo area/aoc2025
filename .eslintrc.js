@@ -45,11 +45,11 @@ module.exports = {
     sourceType: 'module',
   },
   rules: {
-    '@stylistic/js/indent': ['error', 2],
+    // '@stylistic/js/indent': ['error', 2],
     '@typescript-eslint/semi': ['error', 'always'],
     '@typescript-eslint/comma-dangle': ['error', 'always-multiline'],
     semi: 'off',
-    indent: ['error', 2],
+    // indent: ['error', 2],
     'comma-dangle': 'off',
 
   },
